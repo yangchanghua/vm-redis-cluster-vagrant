@@ -1,0 +1,22 @@
+- hosts: redis-server*
+  become: no
+  tasks:
+    - name: copy redis files
+      copy:
+        src: /vagrant/redis-6.0.6
+        dest: ~/
+        remote_src: yes
+        mode: preserve
+        force: no
+
+    - name: bind ip
+      lineinfile:
+        line: bind 127.0.0.1 {{node_ip}}
+        path: ~/redis-6.0.6/redis.conf
+        regexp: '^bind 127.0.0.1.*'
+        state: present
+
+    - name: start redis-server
+      shell:
+        chdir: ~/redis-6.0.6/
+        cmd: ./src/redis-server ./redis.conf 2>/dev/null 1>&2 &
