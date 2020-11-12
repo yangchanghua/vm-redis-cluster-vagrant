@@ -1,22 +1,51 @@
 - hosts: redis-server*
-  become: no
+  become: yes
   tasks:
-    - name: copy redis files
+    - name: copy redis server
       copy:
-        src: /vagrant/redis-6.0.6
-        dest: ~/
+        src: /vagrant/redis-6.0.6/src/redis-server
+        dest: /usr/local/bin
         remote_src: yes
         mode: preserve
-        force: no
+
+    - name: copy redis cli
+      copy:
+        src: /vagrant/redis-6.0.6/src/redis-cli
+        dest: /usr/local/bin
+        remote_src: yes
+        mode: preserve
+
+    - name: make sure redis conf dir exists
+      file:
+        path: /etc/redis/
+        state: directory
+
+    - name: copy redis conf
+      copy:
+        src: /vagrant/redis-6.0.6/redis.conf
+        dest: /etc/redis/6379.conf
+        remote_src: yes
+        mode: preserve
+
+    - name: make sure data dir exists
+      file:
+        path: /var/redis/data/
+        state: directory
 
     - name: bind ip
       lineinfile:
         line: bind 127.0.0.1 {{node_ip}}
-        path: ~/redis-6.0.6/redis.conf
+        path: /etc/redis/6379.conf
         regexp: '^bind 127.0.0.1.*'
         state: present
 
+    - name: install redis init script
+      copy:
+        src: /vagrant/redis-6.0.6/utils/redis_init_script
+        dest: /etc/init.d/redis
+        mode: 0755
+        remote_src: yes
+
     - name: start redis-server
       shell:
-        chdir: ~/redis-6.0.6/
-        cmd: ./src/redis-server ./redis.conf 2>/dev/null 1>&2 &
+        cmd: service redis start
